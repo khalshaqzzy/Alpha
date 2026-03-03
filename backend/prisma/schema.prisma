@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  chatSessions ChatSession[]
+  trades       Trade[]
+}
+
+model ChatSession {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String   @default("New Chat")
+  status     String   @default("CREATED") // CREATED | ACTIVE | IDLE | ARCHIVED
+  history    Json     @default("[]") // JSONB array of ChatTurn objects
+  chartState Json? // JSONB: { indicators, annotations, chartType }
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  trades     Trade[]
+
+  @@index([userId])
+}
+
+model Trade {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatSessionId String
+  chatSession   ChatSession @relation(fields: [chatSessionId], references: [id])
+  asset         String // e.g., "BTC/USD"
+  symbol        String // e.g., "BTC"
+  direction     String // "Long" | "Short"
+  entryPrice    Float
+  currentPrice  Float
+  status        String @default("Active") // Active | Needs Attention | Closed
+  leverage      Float  @default(1)
+  positionSize  Float  @default(0)
+  strategy      Json // JSONB: { takeProfit, stopLoss, invalidationConditions }
+  agentLog      Json   @default("[]") // JSONB array of agent log entries
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}

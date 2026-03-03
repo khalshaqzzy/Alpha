@@ -1,0 +1,32 @@
+name: Deploy Backend to Development
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - "backend/**"
+      - "docker-compose.yml"
+      - ".github/workflows/deploy-dev.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: SSH into alpha-dev and deploy
+        uses: google-github-actions/ssh-compute@v1
+        with:
+          instance_name: alpha-dev
+          zone: ${{ secrets.GCP_ZONE }}
+          ssh_private_key: ${{ secrets.GCP_SSH_KEY }}
+          command: |
+            cd /opt/alpha
+            git pull origin dev
+            docker compose down
+            docker compose build --no-cache
+            docker compose up -d
+            docker compose exec -T backend npx prisma migrate deploy
