@@ -25,6 +25,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            git config --global --add safe.directory /opt/alpha
             cd /opt/alpha
             bash scripts/deploy.sh main
 
