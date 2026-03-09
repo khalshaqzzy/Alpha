@@ -6,11 +6,17 @@ on:
     paths:
       - "backend/**"
       - "docker-compose.yml"
+      - "scripts/**"
       - ".github/workflows/deploy-dev.yml"
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
@@ -25,8 +31,17 @@ jobs:
           ssh_private_key: ${{ secrets.GCP_SSH_KEY }}
           command: |
             cd /opt/alpha
-            git pull origin dev
-            docker compose down
-            docker compose build --no-cache
-            docker compose up -d
-            docker compose exec -T backend npx prisma migrate deploy
+            bash scripts/deploy.sh dev
+
+      - name: Verify deployment health
+        run: |
+          echo "Waiting 10s for services to stabilize..."
+          sleep 10
+          HEALTH=$(curl -sf --max-time 15 https://dev.cryptoalpha.site/api/health || echo "UNREACHABLE")
+          echo "Health check response: $HEALTH"
+          if echo "$HEALTH" | grep -q '"status":"ok"'; then
+            echo "✅ Development deployment healthy!"
+          else
+            echo "❌ Development health check failed: $HEALTH"
+            exit 1
+          fi
