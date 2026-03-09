@@ -19,6 +19,11 @@ err()  { echo -e "${RED}[✗]${NC} $1"; exit 1; }
 info() { echo -e "${CYAN}[→]${NC} $1"; }
 
 APP_DIR="/opt/alpha"
+
+# Allow git operations even if the directory is owned by a different user
+# (needed when GitHub Actions SSHes in as a different user than the repo owner)
+git config --global --add safe.directory "$APP_DIR"
+
 cd "$APP_DIR" || err "Directory $APP_DIR not found."
 
 BRANCH="${1:-$(git rev-parse --abbrev-ref HEAD)}"
