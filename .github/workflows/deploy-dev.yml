@@ -2,7 +2,7 @@ name: Deploy Backend to Development
 
 on:
   push:
-    branches: [dev]
+    branches: [dev] # dev branch only
     paths:
       - "backend/**"
       - "docker-compose.yml"
