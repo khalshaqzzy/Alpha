@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────────────
 # Alpha — Deploy Script
-# Pulls latest code, rebuilds Docker, runs migrations.
+# Full stop-rebuild-start cycle with health check and migrations.
 # Usage:  bash scripts/deploy.sh [branch]
 # Default branch: auto-detects current branch
+#
+# Flow: down → pull → build (--no-cache) → up → health → migrate
+#
+# Note: Sets git safe.directory for /opt/alpha because GitHub
+# Actions SSH user often differs from the repo owner, causing
+# "dubious ownership" errors without this setting.
 # ──────────────────────────────────────────────────────────────────
 set -euo pipefail
 
